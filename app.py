@@ -26,7 +26,7 @@ def generate_question(difficulty, topic):
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4o-mini",  # Passe den Modellnamen an, falls benötigt
+            model="gpt-4o",  # Passe den Modellnamen an, falls benötigt
             messages=[
                 {"role": "system", "content": "Du bist ein Experte für PCEP Prüfungsfragen."},
                 {"role": "user", "content": prompt}
@@ -65,7 +65,7 @@ def start():
                     break
 
     session['questions'] = questions
-    session['answers'] = {}            # Antworten werden hier gespeichert – die Schlüssel werden als Strings verwendet
+    session['answers'] = {}  # Hier speichern wir Antworten; Schlüssel werden als Strings genutzt.
     session['current_question'] = 0
     session['quiz_paused'] = False
     session['chat'] = []
@@ -100,7 +100,7 @@ def submit_answer():
         return redirect(url_for('results'))
     
     correct_answer = questions[current_index]['correct']
-    # Speichere die Antwort unter einem String-Schlüssel
+    # Schlüssel als String verwenden, um Konflikte zu vermeiden
     session['answers'][str(current_index)] = {
         'question': questions[current_index]['question'],
         'choices': questions[current_index]['choices'],
@@ -117,7 +117,10 @@ def submit_answer():
 
 @app.route('/results')
 def results():
-    return render_template('results.html', answers=session.get('answers', {}), score=session.get('score', 0), total=len(session.get('questions', [])))
+    return render_template('results.html', 
+                           answers=session.get('answers', {}), 
+                           score=session.get('score', 0), 
+                           total=len(session.get('questions', [])))
 
 if __name__ == '__main__':
     app.run(debug=True)
