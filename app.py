@@ -1,18 +1,26 @@
 import os
 import json
-import random
+impor
+t random
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 import openai
+from dotenv import load_dotenv
 
-# OpenAI API-Key – alternativ auch per Umgebungsvariable
+# Lade Umgebungsvariablen aus einer .env-Datei (falls vorhanden)
+load_dotenv()
+
+# OpenAI API-Key aus Umgebungsvariablen lesen
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if not OPENAI_API_KEY:
+    raise ValueError("OPENAI_API_KEY nicht gesetzt!")
+
 client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
 app = Flask(__name__)
-app.secret_key = '1111'  # Bitte einen sicheren Schlüssel wählen
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "fallback-secret")  # Sicherer Schlüssel aus Umgebungsvariablen
 
 def generate_question(difficulty, topic):
-    prompt = "Generiere eine abwechslungsreiche Multiple-Choice Frage für die PCEP Prüfung. Bitte gestalte die Frage so, dass sie sich inhaltlich deutlich von anderen Fragen unterscheidet."
+    prompt = "Generiere eine abwechslungsreiche Multiple-Choice Frage für die PCEP Prüfung. "
     if difficulty != "alle":
         prompt += f" Die Frage soll den Schwierigkeitsgrad '{difficulty}' haben."
     if topic != "alle":
@@ -20,13 +28,13 @@ def generate_question(difficulty, topic):
     prompt += (
         " Es sollen vier Antwortmöglichkeiten generiert werden, von denen nur eine korrekt ist. "
         "Gib die Ausgabe als reines JSON zurück, im Format: "
-        '{"question": "<Fragetext>", "choices": ["Antwort1", "Antwort2", "Antwort3", "Antwort4"], "correct": "<korrekte Antwort>"}'
+        "{\"question\": \"<Fragetext>\", \"choices\": [\"Antwort1\", \"Antwort2\", \"Antwort3\", \"Antwort4\"], \"correct\": \"<korrekte Antwort>\"}""
         " ohne zusätzliche Erläuterungen oder Kommentare."
     )
-
+    
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",  # Passe den Modellnamen an, falls benötigt
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "Du bist ein Experte für PCEP Prüfungsfragen."},
                 {"role": "user", "content": prompt}
@@ -55,7 +63,7 @@ def start():
         topic = "alle"
 
     questions = []
-    for i in range(20):
+    for _ in range(20):
         for attempt in range(3):
             q = generate_question(difficulty, topic)
             if q and "question" in q and "choices" in q and "correct" in q:
@@ -65,11 +73,11 @@ def start():
                     break
 
     session['questions'] = questions
-    session['answers'] = {}  # Hier speichern wir Antworten; Schlüssel werden als Strings genutzt.
+    session['answers'] = {}
     session['current_question'] = 0
     session['quiz_paused'] = False
     session['chat'] = []
-    session['score'] = 0  # Score als int initialisieren
+    session['score'] = 0
 
     return redirect(url_for('quiz'))
 
@@ -100,7 +108,6 @@ def submit_answer():
         return redirect(url_for('results'))
     
     correct_answer = questions[current_index]['correct']
-    # Schlüssel als String verwenden, um Konflikte zu vermeiden
     session['answers'][str(current_index)] = {
         'question': questions[current_index]['question'],
         'choices': questions[current_index]['choices'],
@@ -117,10 +124,7 @@ def submit_answer():
 
 @app.route('/results')
 def results():
-    return render_template('results.html', 
-                           answers=session.get('answers', {}), 
-                           score=session.get('score', 0), 
-                           total=len(session.get('questions', [])))
+    return render_template('results.html', answers=session.get('answers', {}), score=session.get('score', 0), total=len(session.get('questions', [])))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=int(os.getenv("PORT", 5000)))
