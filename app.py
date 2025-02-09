@@ -1,12 +1,12 @@
 import os
 import json
-impor
-t random
+import random
+import traceback
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 import openai
 from dotenv import load_dotenv
 
-# Lade Umgebungsvariablen aus einer .env-Datei (falls vorhanden)
+# Lade Umgebungsvariablen
 load_dotenv()
 
 # OpenAI API-Key aus Umgebungsvariablen lesen
@@ -17,7 +17,7 @@ if not OPENAI_API_KEY:
 client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "fallback-secret")  # Sicherer Schlüssel aus Umgebungsvariablen
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "fallback-secret")  # Sicherer Schlüssel
 
 def generate_question(difficulty, topic):
     prompt = "Generiere eine abwechslungsreiche Multiple-Choice Frage für die PCEP Prüfung. "
@@ -25,13 +25,14 @@ def generate_question(difficulty, topic):
         prompt += f" Die Frage soll den Schwierigkeitsgrad '{difficulty}' haben."
     if topic != "alle":
         prompt += f" Die Frage soll zum Themenbereich '{topic}' gehören."
+    
     prompt += (
         " Es sollen vier Antwortmöglichkeiten generiert werden, von denen nur eine korrekt ist. "
-        "Gib die Ausgabe als reines JSON zurück, im Format: "
-        "{\"question\": \"<Fragetext>\", \"choices\": [\"Antwort1\", \"Antwort2\", \"Antwort3\", \"Antwort4\"], \"correct\": \"<korrekte Antwort>\"}""
-        " ohne zusätzliche Erläuterungen oder Kommentare."
+        "Gib die Ausgabe als JSON zurück, im Format: "
+        '{"question": "<Fragetext>", "choices": ["Antwort1", "Antwort2", "Antwort3", "Antwort4"], "correct": "<korrekte Antwort>"} '
+        "ohne zusätzliche Erläuterungen oder Kommentare."
     )
-    
+
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -39,13 +40,14 @@ def generate_question(difficulty, topic):
                 {"role": "system", "content": "Du bist ein Experte für PCEP Prüfungsfragen."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=1500,
+            max_tokens=500,  # Optimierte Tokenanzahl
         )
         content = response.choices[0].message.content
         question_data = json.loads(content)
         return question_data
     except Exception as e:
         print("Fehler beim Generieren oder Parsen der Frage:", e)
+        traceback.print_exc()
         return None
 
 @app.route('/')
