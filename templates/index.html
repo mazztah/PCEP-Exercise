@@ -1,0 +1,36 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Start</title>
+    <style>
+        body { background-color: black; color: skyblue; text-align: center; }
+        button { padding: 10px; margin: 10px; background: skyblue; color: black; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Willkommen zum PCEP Quiz</h1>
+    <form action="/start" method="post">
+        <label>Schwierigkeit:</label>
+        <select name="difficulty">
+            <option value="alle">Alle</option>
+            <option value="leicht">Leicht</option>
+            <option value="mittel">Mittel</option>
+            <option value="schwer">Schwer</option>
+        </select>
+        <br>
+        <label>Thema:</label>
+        <select name="topic">
+            <option value="alle">Alle</option>
+            <option value="variablen">Variablen</option>
+            <option value="schleifen">Schleifen</option>
+            <option value="funktionen">Funktionen</option>
+        </select>
+        <br>
+        <input type="checkbox" name="godmode"> Godmode aktivieren<br>
+        <button type="submit">Quiz starten</button>
+    </form>
+</body>
+</html>

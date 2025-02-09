@@ -1,0 +1,29 @@
+<!-- chat.html -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <style>
+        body { background-color: black; color: skyblue; text-align: center; }
+        button { padding: 10px; margin: 10px; background: skyblue; color: black; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Chat</h1>
+    <div id="chat-box">
+        {% for message in chat %}
+            <p><strong>{{ message.sender }}:</strong> {{ message.text }}</p>
+        {% endfor %}
+    </div>
+    <form action="/chat_message" method="post">
+        <input type="text" name="message" required>
+        <button type="submit">Senden</button>
+    </form>
+    <form action="/resume_quiz" method="post">
+        <button type="submit">Quiz fortsetzen</button>
+    </form>
+</body>
+</html>
+

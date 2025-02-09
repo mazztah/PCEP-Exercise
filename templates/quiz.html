@@ -1,0 +1,23 @@
+<!-- quiz.html -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz</title>
+    <style>
+        body { background-color: black; color: skyblue; text-align: center; }
+        button { padding: 10px; margin: 10px; background: skyblue; color: black; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Frage {{ index }} von {{ total }}</h1>
+    <h2>{{ question.question }}</h2>
+    <p>Punkte: {{ score }}</p>
+    <form action="/submit_answer" method="post">
+        {% for choice in question.choices %}
+            <button type="submit" name="answer" value="{{ choice }}">{{ choice }}</button><br>
+        {% endfor %}
+    </form>
+</body>
+</html>

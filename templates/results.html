@@ -1,0 +1,25 @@
+<!-- results.html -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ergebnisse</title>
+    <style>
+        body { background-color: black; color: skyblue; text-align: center; }
+        button { padding: 10px; margin: 10px; background: skyblue; color: black; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Ergebnisse</h1>
+    <p>Du hast {{ score }} von {{ total }} Fragen richtig beantwortet.</p>
+    <h2>Antworten</h2>
+    {% for idx, answer in answers.items() %}
+        <p><strong>Frage:</strong> {{ answer.question }}</p>
+        <p><strong>Deine Antwort:</strong> {{ answer.selected }} {% if answer.is_correct %}✅{% else %}❌{% endif %}</p>
+        <p><strong>Korrekte Antwort:</strong> {{ answer.correct }}</p>
+        <hr>
+    {% endfor %}
+    <a href="/">Zurück zum Start</a>
+</body>
+</html>
