@@ -1,12 +1,11 @@
 import os
 import json
 import random
-import traceback
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 import openai
 from dotenv import load_dotenv
 
-# Lade Umgebungsvariablen
+# Lade Umgebungsvariablen aus einer .env-Datei (falls vorhanden)
 load_dotenv()
 
 # OpenAI API-Key aus Umgebungsvariablen lesen
@@ -14,10 +13,10 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
     raise ValueError("OPENAI_API_KEY nicht gesetzt!")
 
-
+client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "fallback-secret")  # Sicherer Schlüssel
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "fallback-secret")  # Sicherer Schlüssel aus Umgebungsvariablen
 
 def generate_question(difficulty, topic):
     prompt = "Generiere eine abwechslungsreiche Multiple-Choice Frage für die PCEP Prüfung. "
@@ -25,14 +24,13 @@ def generate_question(difficulty, topic):
         prompt += f" Die Frage soll den Schwierigkeitsgrad '{difficulty}' haben."
     if topic != "alle":
         prompt += f" Die Frage soll zum Themenbereich '{topic}' gehören."
-    
     prompt += (
         " Es sollen vier Antwortmöglichkeiten generiert werden, von denen nur eine korrekt ist. "
-        "Gib die Ausgabe als JSON zurück, im Format: "
-        '{"question": "<Fragetext>", "choices": ["Antwort1", "Antwort2", "Antwort3", "Antwort4"], "correct": "<korrekte Antwort>"} '
+        "Gib die Ausgabe als reines JSON zurück, im Format: "
+        "{\"question\": \"<Fragetext>\", \"choices\": [\"Antwort1\", \"Antwort2\", \"Antwort3\", \"Antwort4\"], \"correct\": \"<korrekte Antwort>\"} "
         "ohne zusätzliche Erläuterungen oder Kommentare."
     )
-
+    
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -40,14 +38,13 @@ def generate_question(difficulty, topic):
                 {"role": "system", "content": "Du bist ein Experte für PCEP Prüfungsfragen."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=500,  # Optimierte Tokenanzahl
+            max_tokens=1500,
         )
         content = response.choices[0].message.content
         question_data = json.loads(content)
         return question_data
     except Exception as e:
         print("Fehler beim Generieren oder Parsen der Frage:", e)
-        traceback.print_exc()
         return None
 
 @app.route('/')
@@ -127,6 +124,17 @@ def submit_answer():
 @app.route('/results')
 def results():
     return render_template('results.html', answers=session.get('answers', {}), score=session.get('score', 0), total=len(session.get('questions', [])))
+
+@app.route('/api/generate_question', methods=['POST'])
+def api_generate_question():
+    data = request.json
+    difficulty = data.get("difficulty", "alle")
+    topic = data.get("topic", "alle")
+    question = generate_question(difficulty, topic)
+    if question:
+        return jsonify(question)
+    else:
+        return jsonify({"error": "Fehler bei der Generierung der Frage."}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.getenv("PORT", 5000)))
