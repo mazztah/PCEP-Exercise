@@ -10,8 +10,7 @@ load_dotenv()
 
 # OpenAI API-Key aus Umgebungsvariablen lesen
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-if not OPENAI_API_KEY:
-    raise ValueError("OPENAI_API_KEY nicht gesetzt!")
+
 
 client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
