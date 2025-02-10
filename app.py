@@ -1,21 +1,15 @@
 import os
 import json
-import random
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 import openai
 from dotenv import load_dotenv
 
-# Lade Umgebungsvariablen aus einer .env-Datei (falls vorhanden)
 load_dotenv()
-
-# OpenAI API-Key aus Umgebungsvariablen lesen
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
-
 client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "fallback-secret")  # Sicherer Schlüssel aus Umgebungsvariablen
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "fallback-secret")
 
 def generate_question(difficulty, topic):
     prompt = "Generiere eine abwechslungsreiche Multiple-Choice Frage für die PCEP Prüfung. "
@@ -29,7 +23,7 @@ def generate_question(difficulty, topic):
         "{\"question\": \"<Fragetext>\", \"choices\": [\"Antwort1\", \"Antwort2\", \"Antwort3\", \"Antwort4\"], \"correct\": \"<korrekte Antwort>\"} "
         "ohne zusätzliche Erläuterungen oder Kommentare."
     )
-    
+
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -65,33 +59,31 @@ def start():
         for attempt in range(3):
             q = generate_question(difficulty, topic)
             if q and "question" in q and "choices" in q and "correct" in q:
-                duplicate = any(existing["question"].strip() == q["question"].strip() for existing in questions)
-                if not duplicate:
+                if not any(q["question"].strip() == existing["question"].strip() for existing in questions):
                     questions.append(q)
                     break
+
+    if not questions:
+        flash("Konnte nicht genügend Fragen generieren. Bitte versuchen Sie es mit anderen Kriterien.")
+        return redirect(url_for('index'))
 
     session['questions'] = questions
     session['answers'] = {}
     session['current_question'] = 0
-    session['quiz_paused'] = False
-    session['chat'] = []
     session['score'] = 0
-
+    session['chat'] = []
     return redirect(url_for('quiz'))
 
 @app.route('/quiz')
 def quiz():
-    if session.get('quiz_paused', False):
-        return render_template('chat.html', chat=session.get('chat', []))
-    
     current_index = session.get('current_question', 0)
-    questions = session.get('questions', [])
-    
-    if current_index >= len(questions):
+    questions = session.get('questions')
+
+    if not questions or current_index >= len(questions):
         return redirect(url_for('results'))
-    
-    return render_template('quiz.html', 
-                           question=questions[current_index], 
+
+    return render_template('quiz.html',
+                           question=questions[current_index],
                            index=current_index + 1,
                            total=len(questions),
                            score=session.get('score', 0))
@@ -101,10 +93,10 @@ def submit_answer():
     chosen_answer = request.form.get('answer')
     current_index = session.get('current_question', 0)
     questions = session.get('questions', [])
-    
+
     if current_index >= len(questions):
         return redirect(url_for('results'))
-    
+
     correct_answer = questions[current_index]['correct']
     session['answers'][str(current_index)] = {
         'question': questions[current_index]['question'],
@@ -113,10 +105,10 @@ def submit_answer():
         'correct': correct_answer,
         'is_correct': chosen_answer == correct_answer
     }
-    
+
     if chosen_answer == correct_answer:
         session['score'] = session.get('score', 0) + 1
-    
+
     session['current_question'] = current_index + 1
     return redirect(url_for('quiz'))
 
@@ -134,6 +126,20 @@ def api_generate_question():
         return jsonify(question)
     else:
         return jsonify({"error": "Fehler bei der Generierung der Frage."}), 500
+
+@app.route('/chat', methods=['GET'])
+def chat():
+    return render_template('chat.html', chat=session.get('chat', []))
+
+@app.route('/chat_message', methods=['POST'])
+def chat_message():
+    message = request.form.get('message')
+    session['chat'] = session.get('chat', []) + [{'sender': 'User', 'text': message}]
+    return redirect(url_for('chat'))
+
+@app.route('/resume_quiz', methods=['POST'])
+def resume_quiz():
+    return redirect(url_for('quiz'))
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.getenv("PORT", 5000)))
